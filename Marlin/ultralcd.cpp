@@ -1585,6 +1585,19 @@ char *ftostr32(const float &x)
   return conv;
 }
 
+char *ftostr22ns(const float &x)
+{
+  long xx=x*100;
+  xx=abs(xx);
+  conv[0]=(xx<1000)?' ':((xx/1000)%10+'0');
+  conv[1]=(xx/100)%10+'0';
+  conv[2]='.';
+  conv[3]=(xx/10)%10+'0';
+  conv[4]=(xx)%10+'0';
+  conv[5]=0;
+  return conv;
+}
+
 // Convert float to string with 1.234 format
 char *ftostr43(const float &x)
 {

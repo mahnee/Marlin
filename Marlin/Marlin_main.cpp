@@ -2452,10 +2452,33 @@ Sigma_Exit:
           SERIAL_PROTOCOLPGM(" T");
           SERIAL_PROTOCOL(cur_extruder);
           SERIAL_PROTOCOLPGM(":");
-          SERIAL_PROTOCOL_F(degHotend(cur_extruder),1);
-          SERIAL_PROTOCOLPGM(" /");
-          SERIAL_PROTOCOL_F(degTargetHotend(cur_extruder),1);
+
+		  // modification for Voltage Monitor
+          #if defined(ENABLE_VOLTAGE_MONITOR) && defined(SEND_VOLTAGE_AS_TEMP_1)
+          if(cur_extruder == 1) {
+            SERIAL_PROTOCOL_F(current_voltage,1);
+            SERIAL_PROTOCOLPGM(" /");
+            SERIAL_PROTOCOL_F(0,1);
+          } else {
+            SERIAL_PROTOCOL_F(degHotend(cur_extruder),1);
+            SERIAL_PROTOCOLPGM(" /");
+            SERIAL_PROTOCOL_F(degTargetHotend(cur_extruder),1);
+          }
+          #else
+            SERIAL_PROTOCOL_F(degHotend(cur_extruder),1);
+            SERIAL_PROTOCOLPGM(" /");
+            SERIAL_PROTOCOL_F(degTargetHotend(cur_extruder),1);
+          #endif
+
         }
+        #if EXTRUDERS < 2 && defined(ENABLE_VOLTAGE_MONITOR) && defined(SEND_VOLTAGE_AS_TEMP_1)
+          SERIAL_PROTOCOLPGM(" T");
+          SERIAL_PROTOCOL(1);
+          SERIAL_PROTOCOLPGM(":");
+          SERIAL_PROTOCOL_F(current_voltage,1);
+          SERIAL_PROTOCOLPGM(" /");
+          SERIAL_PROTOCOL_F(0,1);
+        #endif
       #else
         SERIAL_ERROR_START;
         SERIAL_ERRORLNPGM(MSG_ERR_NO_THERMISTORS);

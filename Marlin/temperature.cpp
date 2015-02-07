@@ -77,6 +77,12 @@ unsigned char soft_pwm_bed;
 #ifdef FILAMENT_SENSOR
   int current_raw_filwidth = 0;  //Holds measured filament diameter - one extruder only
 #endif  
+
+#ifdef ENABLE_VOLTAGE_MONITOR
+  float current_voltage = 0.0;
+  int current_voltage_raw = 0;
+#endif
+
 //===========================================================================
 //=============================private variables============================
 //===========================================================================
@@ -815,6 +821,9 @@ static void updateTemperaturesFromRawValues()
     #if defined (FILAMENT_SENSOR) && (FILWIDTH_PIN > -1)    //check if a sensor is supported 
       filament_width_meas = analog2widthFil();
     #endif  
+    #ifdef ENABLE_VOLTAGE_MONITOR
+      current_voltage = analog2voltage();
+    #endif
     //Reset the watchdog after we know we have a temperature measurement.
     watchdog_reset();
 
@@ -850,7 +859,11 @@ return(filament_width_nominal/temp*100);
 #endif
 
 
-
+#ifdef ENABLE_VOLTAGE_MONITOR
+float analog2voltage() {
+	return current_voltage_raw * 5.0 * VOLTAGE_DIVIDING_FACTOR / 1024 / OVERSAMPLENR;
+}
+#endif
 
 
 void tp_init()
@@ -1320,6 +1333,7 @@ ISR(TIMER0_COMPB_vect)
   static unsigned long raw_temp_2_value = 0;
   static unsigned long raw_temp_3_value = 0;
   static unsigned long raw_temp_bed_value = 0;
+  static unsigned long raw_voltage_value = 0;
   static unsigned char temp_state = 12;
   static unsigned char pwm_count = (1 << SOFT_PWM_SCALE);
   static unsigned char soft_pwm_0;
@@ -1814,11 +1828,37 @@ ISR(TIMER0_COMPB_vect)
         raw_filwidth_value= raw_filwidth_value + ((unsigned long)ADC<<7);  //add new ADC reading 
         }
      #endif 
-     temp_state = 0;   
+//     temp_state = 0;  // by smkim for voltage monitor   
+     temp_state = 13;   // by smkim for voltage monitor
       
      temp_count++;
      break;      
-      
+    
+    // by smkim for voltage monitor  
+    case 13: // Prepare VOLTAGE_MONITOR
+      #ifdef ENABLE_VOLTAGE_MONITOR
+      #if defined(VOLTAGE_MONITOR_PIN) && (VOLTAGE_MONITOR_PIN > -1)
+        #if VOLTAGE_MONITOR_PIN > 7
+          ADCSRB = 1<<MUX5;
+        #else
+          ADCSRB = 0;
+        #endif
+        ADMUX = ((1 << REFS0) | (VOLTAGE_MONITOR_PIN & 0x07));
+        ADCSRA |= 1<<ADSC; // Start conversion
+      #endif
+      #endif
+      lcd_buttons_update();
+      temp_state = 14;
+      break;
+    case 14: // Measure VOLTAGE_MONITOR
+      #ifdef ENABLE_VOLTAGE_MONITOR
+      #if defined(VOLTAGE_MONITOR_PIN) && (VOLTAGE_MONITOR_PIN > -1)
+        raw_voltage_value += ADC;
+      #endif
+      #endif
+      temp_state = 0;
+      break;
+	// end of voltage monitor
       
     case 12: //Startup, delay initial temp reading a tiny bit so the hardware can settle.
       temp_state = 0;
@@ -1849,13 +1889,17 @@ ISR(TIMER0_COMPB_vect)
       current_temperature_raw[3] = raw_temp_3_value;
 #endif
       current_temperature_bed_raw = raw_temp_bed_value;
+// for Voltage Monitor
+#ifdef ENABLE_VOLTAGE_MONITOR
+      current_voltage_raw = raw_voltage_value;
+#endif
     }
 
 //Add similar code for Filament Sensor - can be read any time since IIR filtering is used 
 #if defined(FILWIDTH_PIN) &&(FILWIDTH_PIN > -1)
   current_raw_filwidth = raw_filwidth_value>>10;  //need to divide to get to 0-16384 range since we used 1/128 IIR filter approach 
 #endif
-    
+
     
     temp_meas_ready = true;
     temp_count = 0;
@@ -1864,6 +1908,10 @@ ISR(TIMER0_COMPB_vect)
     raw_temp_2_value = 0;
     raw_temp_3_value = 0;
     raw_temp_bed_value = 0;
+
+#ifdef ENABLE_VOLTAGE_MONITOR
+    raw_voltage_value = 0;
+#endif
 
 #if HEATER_0_RAW_LO_TEMP > HEATER_0_RAW_HI_TEMP
     if(current_temperature_raw[0] <= maxttemp_raw[0]) {

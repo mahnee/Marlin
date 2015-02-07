@@ -225,3 +225,7 @@
   #define MISO_PIN         50
   #define MOSI_PIN         51
 #endif
+
+#ifdef ENABLE_VOLTAGE_MONITOR
+  #define VOLTAGE_MONITOR_PIN 3 // Analog Pin
+#endif

@@ -158,6 +158,13 @@ Here are some standard links for getting your machine calibrated:
 //#define EXTRUDER_WATTS (12.0*12.0/6.7) //  P=I^2/R
 //#define BED_WATTS (12.0*12.0/1.1)      // P=I^2/R
 
+// If you want to use Voltage Monitor, define ENABLE_VOLTAGE_MONITOR.
+// Then, connect external circuit(voltage divider) on A3 pin of RAMPS 1.4
+// If you define SEND_VOLTAGE_AS_TEMP_1, host program can display voltage value as second extruder temperature.
+//#define ENABLE_VOLTAGE_MONITOR
+//#define SEND_VOLTAGE_AS_TEMP_1
+//#define VOLTAGE_DIVIDING_FACTOR 3.0
+
 //===========================================================================
 //============================= PID Settings ================================
 //===========================================================================

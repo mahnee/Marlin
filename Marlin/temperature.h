@@ -39,6 +39,12 @@ void manage_heater(); //it is critical that this is called periodically.
  int widthFil_to_size_ratio();
 #endif
 
+#ifdef ENABLE_VOLTAGE_MONITOR
+  float analog2voltage();
+  extern float current_voltage;
+  extern int current_voltage_raw;
+#endif
+
 // low level conversion routines
 // do not use these routines and variables outside of temperature.cpp
 extern int target_temperature[EXTRUDERS];  
